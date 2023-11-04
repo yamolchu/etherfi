@@ -68,6 +68,8 @@ async function reg(address: any, email: string, proxy: string) {
     httpsAgent:
       config.proxyType === 'http' ? new HttpsProxyAgent(`http://${proxy}`) : new SocksProxyAgent(`socks5://${proxy}`),
   });
+  config.isRotatingProxy ? await axios.get(config.proxyRefreshLink) : null;
+  config.isRotatingProxy ? await delay(config.sleepAfterRefresh) : null;
 
   const data = { email: email, goerli: true, mainnet: true, account: address };
   console.log('data: ', data);
@@ -97,7 +99,11 @@ function regRecursive(addresses: any, proxies: any, emails: any, index = 0, numT
   }
 
   const worker = new Worker(__filename, {
-    workerData: { address: addresses[index], proxy: proxies[index], email: emails[index] },
+    workerData: {
+      address: addresses[index],
+      proxy: config.isRotatingProxy ? proxies[0] : proxies[index],
+      email: emails[index],
+    },
   });
   worker.on('message', (message: any) => {
     console.log(message);
